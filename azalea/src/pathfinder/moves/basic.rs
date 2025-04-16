@@ -447,7 +447,17 @@ fn execute_diagonal_move(mut ctx: ExecuteCtx) {
 /// Go directly down, usually by mining.
 fn downward_move(ctx: &mut PathfinderCtx, pos: RelBlockPos) {
     // make sure we land on a solid block after breaking the one below us
-    if !ctx.world.is_block_solid(pos.down(2)) {
+    let fall_distance: i32;
+    if ctx.world.is_block_solid(pos.down(2)) {
+        fall_distance = 1;
+    } else if ctx.world.is_block_solid(pos.down(3)) && ctx.world.is_block_passable(pos.down(2)) {
+        fall_distance = 2;
+    } else if ctx.world.is_block_solid(pos.down(4))
+        && ctx.world.is_block_passable(pos.down(2))
+        && ctx.world.is_block_passable(pos.down(3))
+    {
+        fall_distance = 3;
+    } else {
         return;
     }
 
@@ -458,11 +468,11 @@ fn downward_move(ctx: &mut PathfinderCtx, pos: RelBlockPos) {
         return;
     }
 
-    let cost = FALL_N_BLOCKS_COST[1] + break_cost;
+    let cost = FALL_N_BLOCKS_COST[fall_distance as usize] + break_cost;
 
     ctx.edges.push(Edge {
         movement: astar::Movement {
-            target: pos.down(1),
+            target: pos.down(fall_distance),
             data: MoveData {
                 execute: &execute_downward_move,
                 is_reached: &default_is_reached,
@@ -473,7 +483,10 @@ fn downward_move(ctx: &mut PathfinderCtx, pos: RelBlockPos) {
 }
 fn execute_downward_move(mut ctx: ExecuteCtx) {
     let ExecuteCtx {
-        target, position, ..
+        target,
+        start,
+        position,
+        ..
     } = ctx;
 
     let target_center = target.center();
@@ -485,7 +498,7 @@ fn execute_downward_move(mut ctx: ExecuteCtx) {
     if horizontal_distance_from_target > 0.25 {
         ctx.look_at(target_center);
         ctx.walk(WalkDirection::Forward);
-    } else if ctx.mine_while_at_start(target) {
+    } else if ctx.mine_while_at_start(start.down(1)) {
         ctx.walk(WalkDirection::None);
     } else if BlockPos::from(position) != target {
         ctx.look_at(target_center);
