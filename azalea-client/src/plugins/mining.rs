@@ -8,6 +8,7 @@ use azalea_world::{InstanceContainer, InstanceName};
 use bevy_app::{App, Plugin, Update};
 use bevy_ecs::prelude::*;
 use derive_more::{Deref, DerefMut};
+use tracing::debug;
 
 use crate::{
     Client, InstanceHolder,
@@ -575,12 +576,12 @@ pub fn continue_mining_block(
             current_mining_pos,
             current_mining_item,
         ) {
-            println!("continue mining block at {:?}", mining.pos);
+            debug!("continue mining block at {:?}", mining.pos);
             let instance_lock = instances.get(instance_name).unwrap();
             let instance = instance_lock.read();
             let target_block_state = instance.get_block_state(&mining.pos).unwrap_or_default();
 
-            println!("target_block_state: {target_block_state:?}");
+            debug!("target_block_state: {target_block_state:?}");
 
             if target_block_state.is_air() {
                 commands.entity(entity).remove::<Mining>();
@@ -603,7 +604,7 @@ pub fn continue_mining_block(
             if **mine_progress >= 1. {
                 commands.entity(entity).remove::<Mining>();
                 *sequence_number += 1;
-                println!("finished mining block at {:?}", mining.pos);
+                debug!("finished mining block at {:?}", mining.pos);
                 finish_mining_events.write(FinishMiningBlockEvent {
                     entity,
                     position: mining.pos,
@@ -629,7 +630,7 @@ pub fn continue_mining_block(
             });
             commands.trigger(SwingArmEvent { entity });
         } else {
-            println!("switching mining target to {:?}", mining.pos);
+            debug!("switching mining target to {:?}", mining.pos);
             commands.entity(entity).insert(MiningQueued {
                 position: mining.pos,
                 direction: mining.dir,
