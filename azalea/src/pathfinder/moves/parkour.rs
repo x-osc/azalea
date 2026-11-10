@@ -146,7 +146,16 @@ fn parkour_forward_3_move(ctx: &mut MovesCtx, pos: RelBlockPos) {
             continue;
         }
 
-        if !ctx.world.is_standable(pos + offset) {
+        let mut cost = JUMP_PENALTY + SPRINT_ONE_BLOCK_COST * 4.;
+
+        let ascend: i32 = if ctx.world.is_standable(pos + offset.up(1)) {
+            1
+        } else if ctx.world.is_standable(pos + offset) {
+            0
+        } else if ctx.world.is_standable(pos + offset.down(1)) {
+            cost += FALL_N_BLOCKS_COST[2] / 2.;
+            -1
+        } else {
             continue;
         };
 
@@ -159,6 +168,15 @@ fn parkour_forward_3_move(ctx: &mut MovesCtx, pos: RelBlockPos) {
                 continue 'dir;
             }
         }
+        // in a 3+1 these blocks need to be clear
+        if ascend > 0 {
+            for offset in [gap_2_offset, gap_3_offset] {
+                if !ctx.world.is_block_passable((pos + offset).up(3)) {
+                    continue 'dir;
+                }
+            }
+        }
+
         // make sure there's not a block above us
         if !ctx.world.is_block_passable(pos.up(2)) {
             continue;
@@ -168,11 +186,9 @@ fn parkour_forward_3_move(ctx: &mut MovesCtx, pos: RelBlockPos) {
             continue;
         }
 
-        let cost = JUMP_PENALTY + SPRINT_ONE_BLOCK_COST * 4.;
-
         ctx.edges.push(Edge {
             movement: astar::Movement {
-                target: pos + offset,
+                target: pos + offset.up(ascend),
                 data: MoveData {
                     execute: &execute_parkour_move,
                     is_reached: &parkour_is_reached,
@@ -216,6 +232,9 @@ fn execute_parkour_move(mut ctx: ExecuteCtx) {
     let required_distance_from_center = if jump_distance <= 2 {
         // 1 block gap
         0.0
+    } else if jump_distance >= 4 && ascend > 0 {
+        // 3+1 jump
+        0.7
     } else {
         0.6
     };
