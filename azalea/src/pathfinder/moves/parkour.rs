@@ -1,5 +1,8 @@
 use azalea_client::{SprintDirection, WalkDirection};
-use azalea_core::{direction::CardinalDirection, position::BlockPos};
+use azalea_core::{
+    direction::CardinalDirection,
+    position::{BlockPos, Vec3},
+};
 use azalea_physics::collision::BlockWithShape;
 use tracing::trace;
 
@@ -220,6 +223,36 @@ fn execute_parkour_move(mut ctx: ExecuteCtx) {
 
     let ascend: i32 = target.y - start.y;
 
+    // TODO: worlds ugliest code award
+    // and i hate the reading velocity to decide wether were jumping yet
+    let jump_needs_alignment = jump_distance >= 4 && ascend > 0; // 3+1
+    if jump_needs_alignment && player_pos_to_block_pos(position) == start && ctx.physics.on_ground()
+    {
+        // -1, 0 or 1
+        let dx = (target.x - start.x).clamp(-1, 1) as f64;
+        let dz = (target.z - start.z).clamp(-1, 1) as f64;
+
+        let rel = position - start_center;
+        let lateral = rel.x * dz - rel.z * dx;
+        let v = ctx.physics.velocity;
+        let along_v = v.x * dx + v.z * dz;
+
+        if along_v < 0.05 && (lateral.abs() > 0.12) {
+            let setup_point = Vec3::new(
+                start_center.x - dx * 0.3,
+                start_center.y,
+                start_center.z - dz * 0.3,
+            );
+            ctx.look_at(setup_point);
+            if (setup_point - position).horizontal_distance() > 0.1 {
+                ctx.walk(WalkDirection::Forward);
+            } else {
+                ctx.walk(WalkDirection::None);
+            }
+            return;
+        }
+    }
+
     if jump_distance >= 4 || (ascend > 0 && jump_distance >= 3) {
         // 3 block gap OR 2 block gap with ascend
         ctx.sprint(SprintDirection::Forward);
@@ -240,7 +273,7 @@ fn execute_parkour_move(mut ctx: ExecuteCtx) {
         0.0
     } else if jump_distance >= 4 && ascend > 0 {
         // 3+1 jump
-        0.7
+        0.8
     } else {
         0.6
     };
