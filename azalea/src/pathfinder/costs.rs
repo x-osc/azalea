@@ -11,6 +11,8 @@ pub const JUMP_PENALTY: f32 = 2.;
 pub const ENTER_WATER_PENALTY: f32 = 3.;
 pub const CENTER_AFTER_FALL_COST: f32 = WALK_ONE_BLOCK_COST - WALK_OFF_BLOCK_COST; // 0.927
 pub const WALK_ONE_IN_WATER_COST: f32 = 20. / 1.960; // 10.204
+pub const CLIMB_UP_ONE_BLOCK_COST: f32 = 20. / 2.35; // 8.51
+pub const CLIMB_DOWN_ONE_BLOCK_COST: f32 = 20. / 3.; // 6.67
 
 // explanation here:
 // https://github.com/cabaletta/baritone/blob/f147519a5c291015d4f18c94558a3f1bdcdb9588/src/api/java/baritone/api/Settings.java#L405

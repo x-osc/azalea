@@ -130,6 +130,8 @@ pub struct SectionBitsets {
     pub standable: FastFixedBitSet<4096>,
     /// Water source blocks.
     pub water: FastFixedBitSet<4096>,
+    /// Climable blocks e.g ladders, vines.
+    pub climbable: FastFixedBitSet<4096>,
 }
 
 impl CachedWorld {
@@ -247,6 +249,7 @@ impl CachedWorld {
                     solid: FastFixedBitSet::<4096>::new(),
                     standable: FastFixedBitSet::<4096>::new(),
                     water: FastFixedBitSet::<4096>::new(),
+                    climbable: FastFixedBitSet::<4096>::new(),
                 };
 
                 for i in 0..4096 {
@@ -262,6 +265,9 @@ impl CachedWorld {
                     }
                     if is_block_state_water(block_state) {
                         bitsets.water.set(i);
+                    }
+                    if is_block_state_climbable(block_state) {
+                        bitsets.climbable.set(i);
                     }
                 }
                 Box::new(bitsets)
@@ -308,6 +314,13 @@ impl CachedWorld {
     }
     fn is_block_pos_water(&self, pos: BlockPos) -> bool {
         self.check_bitset_for_block(pos, |bitsets, index| bitsets.water.index(index))
+    }
+
+    pub fn is_block_climbable(&self, pos: RelBlockPos) -> bool {
+        self.is_block_pos_climbable(pos.apply(self.origin))
+    }
+    fn is_block_pos_climbable(&self, pos: BlockPos) -> bool {
+        self.check_bitset_for_block(pos, |bitsets, index| bitsets.climbable.index(index))
     }
 
     /// Get the block state at the given position.
@@ -618,6 +631,11 @@ pub fn is_block_state_passable(block_state: BlockState) -> bool {
         // fast path
         return true;
     }
+    // have to make ladders passable to allow moves into them to set up climbing
+    // TODO: is this a good idea?
+    if is_block_state_climbable(block_state) {
+        return true;
+    }
     if !block_state.is_collision_shape_empty() {
         return false;
     }
@@ -718,6 +736,26 @@ pub fn is_block_state_standable(block_state: BlockState) -> bool {
 pub fn is_block_state_water(block_state: BlockState) -> bool {
     // only the default blockstate, which is source blocks
     block_state == BlockState::from(BlockKind::Water)
+}
+
+pub fn is_block_state_climbable(block_state: BlockState) -> bool {
+    if block_state.is_air() {
+        return false;
+    }
+
+    if matches!(
+        BlockKind::from(block_state),
+        BlockKind::Ladder
+            | BlockKind::Vine
+            | BlockKind::TwistingVines
+            | BlockKind::TwistingVinesPlant
+            | BlockKind::CaveVines
+            | BlockKind::CaveVinesPlant
+    ) {
+        return true;
+    }
+
+    false
 }
 
 #[cfg(test)]

@@ -13,6 +13,12 @@ pub fn parkour_move(ctx: &mut MovesCtx, node: RelBlockPos) {
         return;
     }
 
+    if ctx.world.is_block_climbable(node) {
+        // being in a climbable block clamps our speed, so we can't parkour
+        // properly from it
+        return;
+    }
+
     parkour_forward_1_move(ctx, node);
     parkour_forward_2_move(ctx, node);
     parkour_forward_3_move(ctx, node);

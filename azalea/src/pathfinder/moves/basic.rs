@@ -261,6 +261,15 @@ fn descend_move(ctx: &mut MovesCtx, pos: RelBlockPos) {
             continue;
         }
 
+        // falling through a climbable block slows the player, so
+        // descend_into_ladder_move handles those instead
+        if (1..=fall_distance).any(|i| {
+            ctx.world
+                .is_block_climbable(new_horizontal_position.down(i as i32))
+        }) {
+            continue;
+        }
+
         let mut into_water = false;
         if fall_distance == 0 {
             if ctx.world.is_block_water(new_horizontal_position.down(1)) {

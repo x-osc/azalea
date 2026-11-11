@@ -1,4 +1,5 @@
 pub mod basic;
+pub mod climb;
 pub mod parkour;
 pub mod uncommon;
 
@@ -46,6 +47,7 @@ pub const BARITONE_COMPAT: bool = false;
 pub fn default_move(ctx: &mut MovesCtx, node: RelBlockPos) {
     basic::basic_move(ctx, node);
     parkour::parkour_move(ctx, node);
+    climb::climb_move(ctx, node);
     uncommon::uncommon_move(ctx, node);
 }
 
